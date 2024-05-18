@@ -11,35 +11,39 @@ export class Lib {
     this._libOccupations = new Array<Occupation>()
   }
 
-  private isRight(addition: Occupation) {
+  public isRight(addition: Occupation) {
     let callback
     if (this._libOccupations.length === 0) {
       callback = { result: true, reason: 'none' }
       return callback
     } else {
       for (const occ of this._libOccupations) {
-        //周次重合判断
-        if (
-          //oneStartTime < otherEndTime
-          occ._classTime.week[0] < addition._classTime.week[1] &&
-          //oneEndTime > otherStartTime
-          occ._classTime.week[1] > addition._classTime.week[0]
-        ) {
-          //日期重合判断
-          if (occ._classTime.day == addition._classTime.day) {
-            //课次重合判断
+        for (let i = 0; i < occ._classTime.length; i++) {
+          for (let j = 0; j < addition._classTime.length; j++) {
+            //周次重合判断
             if (
               //oneStartTime < otherEndTime
-              occ._classTime.time[0] < addition._classTime.time[1] &&
+              occ._classTime[i].week[0] < addition._classTime[j].week[1] &&
               //oneEndTime > otherStartTime
-              occ._classTime.time[1] > addition._classTime.time[0]
+              occ._classTime[i].week[1] > addition._classTime[j].week[0]
             ) {
-              callback = {
-                result: false,
-                reason: '与课程 ' + occ._course._courseName + ' 时间冲突'
+              //日期重合判断
+              if (occ._classTime[i].day == addition._classTime[j].day) {
+                //课次重合判断
+                if (
+                  //oneStartTime < otherEndTime
+                  occ._classTime[i].time[0] < addition._classTime[j].time[1] &&
+                  //oneEndTime > otherStartTime
+                  occ._classTime[i].time[1] > addition._classTime[j].time[0]
+                ) {
+                  callback = {
+                    result: false,
+                    reason: '与课程 ' + occ._course._courseName + ' 时间冲突'
+                  }
+                  // console.debug(callback)
+                  return callback
+                }
               }
-              // console.debug(callback)
-              return callback
             }
           }
         }
@@ -53,10 +57,19 @@ export class Lib {
   public addOccupation(addition: Occupation) {
     const callback = this.isRight(addition)
     if (callback.result) {
+      for (const occupation of this._libOccupations) {
+        if (occupation._course._courseName === addition._course._courseName) {
+          occupation.addTime(addition._classTime[0])
+          callback.reason = '添加成功'
+          return callback
+        }
+      }
       this._libOccupations.push(addition)
       this._libOccupations.sort((first: Occupation, second: Occupation) =>
-        first._classTime.week[0] > second._classTime.week[0] ? 1 : -1
+        first._classTime[0].week[0] > second._classTime[0].week[0] ? 1 : -1
       )
+      callback.reason = '创建成功'
+      return callback
     }
     return callback
   }
